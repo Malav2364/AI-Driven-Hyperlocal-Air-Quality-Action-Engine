@@ -167,5 +167,3 @@ Outcome: **Eliminates trial-and-error** in environmental governance.
 This project transforms **AQI** from a passive reporting number into an **AI-driven decision engine** — a shift from *observation* to *actionable environmental intelligence*.
 
 
-### 🧭 High-Level Data Flow
-
