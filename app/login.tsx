@@ -1,10 +1,50 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { api, setToken } from './services/api';
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'authority' | 'citizen'>('authority');
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await api.login(email, password);
+      if (data.token) {
+        await setToken(data.token);
+        router.replace('/(tabs)/dashboard');
+      } else {
+        Alert.alert('Login Failed', data.message || 'Invalid credentials');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error or server unavailable');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -74,6 +114,8 @@ export default function LoginScreen() {
                       placeholderTextColor="#9CA3AF"
                       autoCapitalize="none"
                       keyboardType="email-address"
+                      value={email}
+                      onChangeText={setEmail}
                     />
                   </View>
                 </View>
@@ -88,6 +130,8 @@ export default function LoginScreen() {
                       style={styles.textInput}
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                       <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
@@ -97,16 +141,19 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                {/* Mobile Number Input */}
+                {/* Email Input for Citizen (Changed from Mobile to Email for consistency) */}
                 <View>
-                  <Text style={styles.inputLabel}>Mobile Number</Text>
+                  <Text style={styles.inputLabel}>Email Address</Text>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="call-outline" size={20} color="#6B7280" />
+                    <Ionicons name="mail-outline" size={20} color="#6B7280" />
                     <TextInput 
-                      placeholder="+91 98765 43210" 
+                      placeholder="name@example.com" 
                       style={styles.textInput}
                       placeholderTextColor="#9CA3AF"
-                      keyboardType="phone-pad"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
                     />
                   </View>
                 </View>
@@ -121,6 +168,8 @@ export default function LoginScreen() {
                       style={styles.textInput}
                       placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                       <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
@@ -136,17 +185,27 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Submit Button */}
-            <TouchableOpacity style={styles.submitButton}>
-              <Text style={styles.submitButtonText}>
-                {activeTab === 'authority' ? 'Access Decision Dashboard' : 'Login as Citizen'}
-              </Text>
-              <Ionicons name="arrow-forward" size={20} color="white" />
+            <TouchableOpacity 
+              style={styles.submitButton}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Text style={styles.submitButtonText}>
+                    {activeTab === 'authority' ? 'Access Decision Dashboard' : 'Login as Citizen'}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={20} color="white" />
+                </>
+              )}
             </TouchableOpacity>
 
             {/* Footer */}
             <View style={styles.footerContainer}>
               <Text style={styles.footerText}>Don't have an account? </Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/signup')}>
                 <Text style={styles.footerLink}>
                   {activeTab === 'authority' ? 'Request Access' : 'Register Now'}
                 </Text>
