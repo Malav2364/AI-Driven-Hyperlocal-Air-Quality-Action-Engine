@@ -26,20 +26,21 @@ const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, default: 'Citizen', enum: ['Citizen', 'Authority'] },
+    role: { type: String, default: 'Citizen', enum: ['Citizen', 'Industry', 'Government', 'Farmer'] },
+    age: { type: Number },
     city: { type: String },
     pincode: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 
 const User = mongoose.model('User', UserSchema);
-
-// Routes
+// ...
 
 // Register
 app.post('/signup', async (req, res) => {
     try {
-        const { name, email, password, role, city, pincode } = req.body;
+        console.log('Signup Request Body:', req.body);
+        const { name, email, password, role, age, city, pincode } = req.body;
 
         // Check if user exists
         let user = await User.findOne({ email });
@@ -57,6 +58,7 @@ app.post('/signup', async (req, res) => {
             email,
             password: hashedPassword,
             role,
+            age,
             city,
             pincode
         });
@@ -68,11 +70,16 @@ app.post('/signup', async (req, res) => {
 
         res.status(201).json({
             token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role, city: user.city, pincode: user.pincode }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, age: user.age, city: user.city, pincode: user.pincode }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        // ... (catch block)
+        console.error('Signup Error:', error);
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern).join(', ');
+            return res.status(400).json({ message: `${field} already exists` });
+        }
+        res.status(500).json({ message: error.message || 'Server error' });
     }
 });
 
@@ -117,6 +124,39 @@ app.get('/me', async (req, res) => {
         res.json(user);
     } catch (error) {
         res.status(401).json({ message: 'Token is not valid' });
+    }
+});
+
+// Update User (Protected)
+app.put('/me', async (req, res) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { name, email, age, city, pincode } = req.body;
+
+        // Build update object
+        const updateFields = {};
+        if (name) updateFields.name = name;
+        if (email) updateFields.email = email;
+        if (age) updateFields.age = age;
+        if (city) updateFields.city = city;
+        if (pincode) updateFields.pincode = pincode;
+
+        const user = await User.findByIdAndUpdate(
+            decoded.userId,
+            { $set: updateFields },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.json(user);
+    } catch (error) {
+        console.error(error);
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

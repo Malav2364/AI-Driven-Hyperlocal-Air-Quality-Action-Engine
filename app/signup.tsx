@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,9 +18,13 @@ import {
 import { api, setToken } from './services/api';
 
 export default function SignupScreen() {
-  const [role, setRole] = useState<'Citizen' | 'Authority'>('Citizen');
+  const params = useLocalSearchParams();
+  const initialRole = params.role ? (params.role as string) : 'Citizen';
+  
+  const [role, setRole] = useState<string>(initialRole);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [age, setAge] = useState('');
   const [password, setPassword] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
@@ -35,14 +39,14 @@ export default function SignupScreen() {
         Alert.alert('Pledge Required', 'Please accept the Responsible Use Pledge to continue.');
         return;
     }
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !age) {
         Alert.alert('Error', 'Please fill in all fields.');
         return;
     }
 
     setLoading(true);
     try {
-        const data = await api.signup(name, email, password, role, city, pincode);
+        const data = await api.signup(name, email, password, role, age, city, pincode);
         if (data.token) {
             await setToken(data.token);
             // Navigate to the tabs dashboard
@@ -109,34 +113,26 @@ export default function SignupScreen() {
             onPress={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="business" size={20} color="#2B5F6C" style={{ marginRight: 12 }} />
+              <Ionicons name="people" size={20} color="#2B5F6C" style={{ marginRight: 12 }} />
               <Text style={styles.roleText}>{role}</Text>
             </View>
             <Ionicons name={isDropdownOpen ? "chevron-up" : "chevron-down"} size={20} color="#6B7280" />
           </TouchableOpacity>
           {isDropdownOpen && (
             <View style={styles.dropdownContainer}>
-              <TouchableOpacity 
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setRole('Citizen');
-                  setIsDropdownOpen(false);
-                }}
-              >
-                <Text style={[styles.roleText, role === 'Citizen' && { color: '#2B5F6C', fontWeight: 'bold' }]}>Citizen</Text>
-                {role === 'Citizen' && <Ionicons name="checkmark" size={16} color="#2B5F6C" />}
-              </TouchableOpacity>
-              <View style={styles.dropdownDivider} />
-              <TouchableOpacity 
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setRole('Authority');
-                  setIsDropdownOpen(false);
-                }}
-              >
-                <Text style={[styles.roleText, role === 'Authority' && { color: '#2B5F6C', fontWeight: 'bold' }]}>Authority</Text>
-                {role === 'Authority' && <Ionicons name="checkmark" size={16} color="#2B5F6C" />}
-              </TouchableOpacity>
+              {['Citizen', 'Industry', 'Government', 'Farmer'].map((item) => (
+                <TouchableOpacity 
+                    key={item}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                    setRole(item);
+                    setIsDropdownOpen(false);
+                    }}
+                >
+                    <Text style={[styles.roleText, role === item && { color: '#2B5F6C', fontWeight: 'bold' }]}>{item}</Text>
+                    {role === item && <Ionicons name="checkmark" size={16} color="#2B5F6C" />}
+                </TouchableOpacity>
+              ))}
             </View>
           )}
           <Text style={styles.helperText}>
@@ -157,17 +153,31 @@ export default function SignupScreen() {
             />
           </View>
 
-          <View>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput 
-              placeholder="name@email.com" 
-              style={styles.input} 
-              placeholderTextColor="#9CA3AF"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
+          <View style={{flexDirection: 'row', gap: 16}}>
+             <View style={{flex: 1}}>
+                <Text style={styles.label}>Age</Text>
+                <TextInput 
+                placeholder="25" 
+                style={styles.input} 
+                placeholderTextColor="#9CA3AF"
+                keyboardType="numeric"
+                value={age}
+                onChangeText={setAge}
+                maxLength={3}
+                />
+            </View>
+             <View style={{flex: 2}}>
+                <Text style={styles.label}>Email Address</Text>
+                <TextInput 
+                placeholder="name@email.com" 
+                style={styles.input} 
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                />
+            </View>
           </View>
 
           <View>
@@ -185,17 +195,9 @@ export default function SignupScreen() {
                 <Ionicons name={showPassword ? "eye-off" : "eye-off"} size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
-            
-            {/* Password Strength */}
-            <View style={styles.strengthContainer}>
-              <View style={[styles.strengthBar, { backgroundColor: '#22C55E' }]} />
-              <View style={[styles.strengthBar, { backgroundColor: '#22C55E' }]} />
-              <View style={[styles.strengthBar, { backgroundColor: '#E5E7EB' }]} />
-              <View style={[styles.strengthBar, { backgroundColor: '#E5E7EB' }]} />
-            </View>
-            <Text style={styles.strengthText}>Strength: Medium</Text>
           </View>
         </View>
+
 
         <View style={styles.divider} />
 
@@ -404,21 +406,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1F2937',
   },
-  strengthContainer: {
-    flexDirection: 'row',
-    gap: 4,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  strengthBar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-  },
-  strengthText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
+
   divider: {
     height: 1,
     backgroundColor: '#E5E7EB',

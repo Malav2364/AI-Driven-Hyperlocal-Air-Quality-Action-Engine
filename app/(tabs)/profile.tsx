@@ -3,12 +3,14 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     Image,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -17,12 +19,30 @@ import { api, removeToken } from '../services/api';
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+      name: '',
+      email: '',
+      age: '',
+      city: '',
+      pincode: ''
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
         try {
             const data = await api.getMe();
             setUser(data);
+            setFormData({
+                name: data.name || '',
+                email: data.email || '',
+                age: data.age ? String(data.age) : '',
+                city: data.city || '',
+                pincode: data.pincode || ''
+            });
         } catch (error) {
             console.log(error);
         } finally {
@@ -31,6 +51,20 @@ export default function ProfileScreen() {
     };
     fetchUser();
   }, []);
+
+  const handleSave = async () => {
+      setSaving(true);
+      try {
+          const updatedUser = await api.updateUser(formData);
+          setUser(updatedUser);
+          setIsEditing(false);
+          Alert.alert("Success", "Profile updated successfully");
+      } catch (error) {
+          Alert.alert("Error", "Failed to update profile");
+      } finally {
+          setSaving(false);
+      }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -70,12 +104,27 @@ export default function ProfileScreen() {
                 style={styles.avatar} 
                 />
             </View>
-            <TouchableOpacity style={styles.editButton}>
-              <Ionicons name="pencil" size={16} color="#374151" />
+            <TouchableOpacity 
+                style={[styles.editButton, isEditing && { backgroundColor: '#2B5F6C' }]} 
+                onPress={() => setIsEditing(!isEditing)}
+            >
+              <Ionicons name={isEditing ? "close" : "pencil"} size={16} color={isEditing ? "white" : "#374151"} />
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.userName}>{user?.name || 'Citizen'}</Text>
+          {isEditing ? (
+              <View style={{width: '100%', alignItems: 'center', marginBottom: 16}}>
+                  <TextInput 
+                    style={styles.editNameInput} 
+                    value={formData.name}
+                    onChangeText={(text) => setFormData({...formData, name: text})}
+                    placeholder="Full Name"
+                  />
+              </View>
+          ) : (
+            <Text style={styles.userName}>{user?.name || 'Citizen'}</Text>
+          )}
+
           <Text style={styles.userRole}>{user?.role || 'User'}</Text>
           
           <View style={styles.tagsRow}>
@@ -88,6 +137,52 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {isEditing && (
+             <View style={styles.editBanner}>
+                 <Text style={styles.editBannerText}>Editing Profile Details</Text>
+             </View>
+        )}
+
+        {/* Personal Details Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+             <Ionicons name="person" size={20} color="#264E58" style={{marginRight: 8}} />
+             <Text style={styles.cardTitle}>Personal Details</Text>
+          </View>
+          
+           <View style={styles.detailsRow}>
+             <Text style={styles.detailsLabel}>Age</Text>
+             {isEditing ? (
+                 <TextInput 
+                    style={styles.editInput} 
+                    value={formData.age}
+                    onChangeText={(text) => setFormData({...formData, age: text})}
+                    placeholder="Age"
+                    keyboardType="numeric"
+                 />
+             ) : (
+                <Text style={styles.detailsValue}>{user?.age || 'Not Set'}</Text>
+             )}
+          </View>
+          <View style={styles.detailsDivider} />
+          
+           <View style={styles.detailsRow}>
+             <Text style={styles.detailsLabel}>Email</Text>
+              {isEditing ? (
+                 <TextInput 
+                    style={styles.editInput} 
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({...formData, email: text})}
+                    placeholder="Email"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                 />
+             ) : (
+                <Text style={styles.detailsValue}>{user?.email || 'Not Set'}</Text>
+             )}
+          </View>
+        </View>
+
         {/* Location Details Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -97,47 +192,60 @@ export default function ProfileScreen() {
           
           <View style={styles.detailsRow}>
              <Text style={styles.detailsLabel}>City</Text>
-             <Text style={styles.detailsValue}>{user?.city || 'Not Set'}</Text>
+             {isEditing ? (
+                 <TextInput 
+                    style={styles.editInput} 
+                    value={formData.city}
+                    onChangeText={(text) => setFormData({...formData, city: text})}
+                    placeholder="City"
+                 />
+             ) : (
+                <Text style={styles.detailsValue}>{user?.city || 'Not Set'}</Text>
+             )}
           </View>
           <View style={styles.detailsDivider} />
           
            <View style={styles.detailsRow}>
-             <Text style={styles.detailsLabel}>Neighborhood</Text>
-             <Text style={styles.detailsValue}>{user?.pincode ? `Area Code: ${user.pincode}` : 'Not Set'}</Text>
-          </View>
-          <View style={styles.detailsDivider} />
-
-           <View style={styles.detailsRow}>
-             <Text style={styles.detailsLabel}>Country</Text>
-             <Text style={styles.detailsValue}>India</Text>
+             <Text style={styles.detailsLabel}>Neighborhood Code</Text>
+              {isEditing ? (
+                 <TextInput 
+                    style={styles.editInput} 
+                    value={formData.pincode}
+                    onChangeText={(text) => setFormData({...formData, pincode: text})}
+                    placeholder="Pincode"
+                    keyboardType="numeric"
+                 />
+             ) : (
+                <Text style={styles.detailsValue}>{user?.pincode || 'Not Set'}</Text>
+             )}
           </View>
         </View>
 
-        {/* Contact Information Card */}
-        <View style={styles.card}>
-           <View style={styles.cardHeader}>
-             <Ionicons name="person" size={20} color="#264E58" style={{marginRight: 8}} />
-             <Text style={styles.cardTitle}>Contact Information</Text>
-          </View>
-
-          <View style={styles.contactItem}>
-            <View style={styles.contactIconBox}>
-                <Ionicons name="mail" size={18} color="#374151" />
-            </View>
-            <View>
-                <Text style={styles.contactLabel}>EMAIL ADDRESS</Text>
-                <Text style={styles.contactValue}>{user?.email || 'email@example.com'}</Text>
-            </View>
-          </View>
-
-          {/* ... */}
-        </View>
+        {/* Save Button */}
+        {isEditing && (
+            <TouchableOpacity 
+                style={styles.saveButton} 
+                onPress={handleSave}
+                disabled={saving}
+            >
+                {saving ? (
+                    <ActivityIndicator color="white" />
+                ) : (
+                    <>
+                    <Ionicons name="save-outline" size={20} color="white" style={{ marginRight: 8 }} />
+                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                    </>
+                )}
+            </TouchableOpacity>
+        )}
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" style={{ marginRight: 8 }} />
-            <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        {!isEditing && (
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={20} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+        )}
 
       </ScrollView>
 
@@ -320,5 +428,56 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#EF4444',
   },
-
+  editNameInput: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#111827',
+      borderBottomWidth: 1,
+      borderBottomColor: '#2B5F6C',
+      paddingBottom: 4,
+      textAlign: 'center',
+      minWidth: 150,
+  },
+  editInput: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#111827',
+      borderBottomWidth: 1,
+      borderBottomColor: '#D1D5DB',
+      paddingVertical: 4,
+      minWidth: 100,
+      textAlign: 'right',
+  },
+  editBanner: {
+      backgroundColor: '#FEF3C7',
+      padding: 8,
+      alignItems: 'center',
+      borderRadius: 8,
+      marginBottom: 16,
+  },
+  editBannerText: {
+      color: '#92400E',
+      fontSize: 12,
+      fontWeight: '600',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#2B5F6C',
+    marginBottom: 24,
+    marginTop: 8,
+    shadowColor: '#2B5F6C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'white',
+  },
 });

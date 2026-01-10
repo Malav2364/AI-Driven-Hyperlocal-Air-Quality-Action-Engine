@@ -17,7 +17,6 @@ import {
 import { api, setToken } from './services/api';
 
 export default function LoginScreen() {
-  const [activeTab, setActiveTab] = useState<'authority' | 'citizen'>('authority');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -65,35 +64,11 @@ export default function LoginScreen() {
       <View style={styles.contentContainer}>
         <ScrollView showsVerticalScrollIndicator={false}>
           
-          {/* Toggle Switch */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity 
-              onPress={() => setActiveTab('authority')}
-              style={[styles.tabButton, activeTab === 'authority' ? styles.tabButtonActive : {}]}
-            >
-              <Ionicons name="shield-checkmark" size={16} color={activeTab === 'authority' ? 'white' : '#6B7280'} style={{marginRight: 6}} />
-              <Text style={activeTab === 'authority' ? styles.tabTextActive : styles.tabTextInactive}>
-                Authority
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={() => setActiveTab('citizen')}
-              style={[styles.tabButton, activeTab === 'citizen' ? styles.tabButtonActive : {}]}
-            >
-              <Ionicons name="person" size={16} color={activeTab === 'citizen' ? 'white' : '#6B7280'} style={{marginRight: 6}} />
-              <Text style={activeTab === 'citizen' ? styles.tabTextActive : styles.tabTextInactive}>
-                Citizen
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Description */}
+          {/* Header */}
           <View style={styles.descriptionContainer}>
+            <Text style={{fontSize: 24, fontWeight: 'bold', color: '#1F2937', marginBottom: 8}}>Welcome Back</Text>
             <Text style={styles.descriptionText}>
-              {activeTab === 'authority' 
-                ? 'Secure access for disaster management and critical decision support.'
-                : 'Stay informed and safe with real-time pollution and disaster updates.'}
+              Sign in to access your dashboard and insights.
             </Text>
             <View style={styles.descriptionDivider} />
           </View>
@@ -101,83 +76,41 @@ export default function LoginScreen() {
           {/* Form Fields */}
           <View style={styles.formContainer}>
             
-            {activeTab === 'authority' ? (
-              <>
-                {/* Email Input */}
-                <View>
-                  <Text style={styles.inputLabel}>Official Email</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="mail-outline" size={20} color="#6B7280" />
-                    <TextInput 
-                      placeholder="name@gov.agency" 
-                      style={styles.textInput}
-                      placeholderTextColor="#9CA3AF"
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      value={email}
-                      onChangeText={setEmail}
-                    />
-                  </View>
-                </View>
+            {/* Email Input */}
+            <View>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color="#6B7280" />
+                <TextInput 
+                  placeholder="name@example.com" 
+                  style={styles.textInput}
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+            </View>
 
-                {/* Password Input */}
-                <View>
-                  <Text style={styles.inputLabel}>Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#6B7280" />
-                    <TextInput 
-                      placeholder="........" 
-                      style={styles.textInput}
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showPassword}
-                      value={password}
-                      onChangeText={setPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                      <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            ) : (
-              <>
-                {/* Email Input for Citizen (Changed from Mobile to Email for consistency) */}
-                <View>
-                  <Text style={styles.inputLabel}>Email Address</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="mail-outline" size={20} color="#6B7280" />
-                    <TextInput 
-                      placeholder="name@example.com" 
-                      style={styles.textInput}
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      value={email}
-                      onChangeText={setEmail}
-                    />
-                  </View>
-                </View>
-
-                {/* Password Input */}
-                <View>
-                  <Text style={styles.inputLabel}>Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#6B7280" />
-                    <TextInput 
-                      placeholder="........" 
-                      style={styles.textInput}
-                      placeholderTextColor="#9CA3AF"
-                      secureTextEntry={!showPassword}
-                      value={password}
-                      onChangeText={setPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                      <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            )}
+            {/* Password Input */}
+            <View>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color="#6B7280" />
+                <TextInput 
+                  placeholder="........" 
+                  style={styles.textInput}
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Forgot Password */}
             <TouchableOpacity style={styles.forgotPasswordButton}>
@@ -194,9 +127,7 @@ export default function LoginScreen() {
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Text style={styles.submitButtonText}>
-                    {activeTab === 'authority' ? 'Access Decision Dashboard' : 'Login as Citizen'}
-                  </Text>
+                  <Text style={styles.submitButtonText}>Log In</Text>
                   <Ionicons name="arrow-forward" size={20} color="white" />
                 </>
               )}
@@ -206,9 +137,7 @@ export default function LoginScreen() {
             <View style={styles.footerContainer}>
               <Text style={styles.footerText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => router.push('/signup')}>
-                <Text style={styles.footerLink}>
-                  {activeTab === 'authority' ? 'Request Access' : 'Register Now'}
-                </Text>
+                <Text style={styles.footerLink}>Register Now</Text>
               </TouchableOpacity>
             </View>
 

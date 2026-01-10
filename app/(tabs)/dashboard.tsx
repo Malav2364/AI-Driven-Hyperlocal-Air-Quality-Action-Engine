@@ -76,7 +76,8 @@ export default function DashboardScreen() {
           }
         } catch (geoError) {
           console.log('Geocoding error:', geoError);
-          setLocationName('Unknown Location');
+          // Fallback if geocoding fails (e.g., service unavailable or network issue)
+          setLocationName('My Location');
         }
       } catch (error) {
         console.log('Location error:', error);

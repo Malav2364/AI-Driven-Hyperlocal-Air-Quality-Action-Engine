@@ -10,7 +10,7 @@ const API_URL = 'http://localhost:5000'; // For iOS simulator
 const getBaseUrl = () => {
     // Attempting to use the machine's LAN IP which works for Emulators and Physical Devices on the same network
     if (Platform.OS === 'android' || Platform.OS === 'ios') {
-        return 'http://192.168.0.107:5000';
+        return 'http://172.20.10.4:5000';
     }
     return 'http://localhost:5000';
 };
@@ -51,11 +51,11 @@ export const api = {
         return res.json();
     },
 
-    signup: async (name: string, email: string, password: string, role: string, city: string, pincode: string) => {
+    signup: async (name: string, email: string, password: string, role: string, age: string, city: string, pincode: string) => {
         const res = await fetch(`${BASE_URL}/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, role, city, pincode }),
+            body: JSON.stringify({ name, email, password, role, age, city, pincode }),
         });
         return res.json();
     },
@@ -64,6 +64,19 @@ export const api = {
         const token = await getToken();
         const res = await fetch(`${BASE_URL}/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    },
+
+    updateUser: async (data: any) => {
+        const token = await getToken();
+        const res = await fetch(`${BASE_URL}/me`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
         });
         return res.json();
     }
