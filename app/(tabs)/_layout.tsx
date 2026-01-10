@@ -115,6 +115,7 @@ export default function TabLayout() {
         name="analytics"
         options={{
           title: 'Analytics',
+          href: userRole !== 'Government' ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
              <View style={{
               backgroundColor: focused ? '#ECFDF5' : 'transparent',
@@ -125,6 +126,26 @@ export default function TabLayout() {
               justifyContent: 'center',
             }}>
               <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} size={22} color={color} />
+            </View>
+          ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="audit"
+        options={{
+          title: 'Audit',
+          href: userRole === 'Government' ? undefined : null,
+          tabBarIcon: ({ color, focused }) => (
+             <View style={{
+              backgroundColor: focused ? '#ECFDF5' : 'transparent',
+              width: 48,
+              height: 32,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Ionicons name={focused ? "clipboard" : "clipboard-outline"} size={22} color={color} />
             </View>
           ),
         }}

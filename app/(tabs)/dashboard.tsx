@@ -16,6 +16,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import MapView, { Marker, Polygon } from 'react-native-maps';
 import { api } from '../services/api';
 
 const { width } = Dimensions.get('window');
@@ -23,8 +24,27 @@ const { width } = Dimensions.get('window');
 export default function DashboardScreen() {
   const [locationName, setLocationName] = useState<string>('Detecting Location...');
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [userRole, setUserRole] = useState<string>('Citizen');
   const [userName, setUserName] = useState('Citizen');
   const [greeting, setGreeting] = useState('Hello');
+
+
+  const [inletPPM, setInletPPM] = useState('');
+  const [outletPPM, setOutletPPM] = useState('');
+  const [efficiency, setEfficiency] = useState<number | null>(null);
+
+  const calculateEfficiency = () => {
+    const inlet = parseFloat(inletPPM);
+    const outlet = parseFloat(outletPPM);
+    if (!isNaN(inlet) && !isNaN(outlet) && inlet > 0) {
+      const eff = ((1 - (outlet / inlet)) * 100);
+      setEfficiency(eff);
+      if (eff >= 90) Alert.alert("Efficiency Check", `System is operating at ${eff.toFixed(1)}% efficiency. PASS.`);
+      else Alert.alert("Efficiency Warning", `System is only at ${eff.toFixed(1)}%. Maintenance Required.`);
+    } else {
+        Alert.alert("Invalid Input", "Please enter valid PPM values.");
+    }
+  };
 
   useEffect(() => {
     // Determine Greeting
@@ -37,8 +57,9 @@ export default function DashboardScreen() {
     const fetchUser = async () => {
       try {
         const user = await api.getMe();
-        if (user && user.name) {
-          setUserName(user.name);
+        if (user) {
+          if (user.name) setUserName(user.name);
+          if (user.role) setUserRole(user.role);
         }
       } catch (error) {
         console.log('Error fetching user:', error);
@@ -88,43 +109,223 @@ export default function DashboardScreen() {
     })();
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar style="dark" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logo} 
-            resizeMode="contain"
-          />
-          <View style={styles.headerTitles}>
-            <Text style={styles.appName}>{greeting}, {userName.split(' ')[0]}</Text>
-            <View style={styles.locationContainer}>
-              {loadingLocation ? (
-                <ActivityIndicator size="small" color="#6B7280" />
-              ) : (
-                <>
-                  <Text style={styles.locationText} numberOfLines={1}>
-                    {locationName}
-                  </Text>
-                  <Ionicons name="chevron-down" size={10} color="#374151" />
-                </>
-              )}
-            </View>
+  const renderGovernmentDashboard = () => (
+    <View>
+      {/* Live Pollution Feed */}
+      <Text style={styles.sectionTitle}>Live Pollution Feed</Text>
+      <View style={styles.feedCard}>
+          <View style={styles.feedItem}>
+              <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 6}}>
+                  <Text style={styles.alertTag}>🔴 ALERT</Text>
+                  <Text style={styles.feedLocation}>Okhla Phase 3: High Sulfur</Text>
+              </View>
+              <Text style={styles.feedDetails}>AI Confidence: 92% • Source: INDUSTRY</Text>
+              <TouchableOpacity style={styles.dispatchButton}>
+                  <Text style={styles.dispatchButtonText}>DISPATCH AUDIT TEAM</Text>
+              </TouchableOpacity>
           </View>
-        </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications" size={24} color="#1F2937" />
-          <View style={styles.notificationBadge} />
-        </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+      {/* Dispatch Manager */}
+      <Text style={styles.sectionTitle}>Dispatch Manager</Text>
+      <View style={styles.card}>
+          <View style={styles.ticketItem}>
+              <View style={styles.ticketHeader}>
+                  <Text style={styles.ticketTitle}>Fire Squad en route to Nangloi</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: '#FEF3C7' }]}>
+                      <Text style={[styles.statusText, { color: '#D97706' }]}>In Progress</Text>
+                  </View>
+              </View>
+              <Text style={styles.ticketTime}>Assigned: 10 min ago</Text>
+          </View>
+           <View style={styles.divider} />
+           <View style={styles.ticketItem}>
+              <View style={styles.ticketHeader}>
+                  <Text style={styles.ticketTitle}>Patrol Unit at Sector 62</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: '#ECFDF5' }]}>
+                      <Text style={[styles.statusText, { color: '#059669' }]}>Resolved</Text>
+                  </View>
+              </View>
+               <Text style={styles.ticketTime}>Resolved: 1 h ago</Text>
+          </View>
+      </View>
+
+
+      {/* Top Offenders */}
+      <Text style={styles.sectionTitle}>Top Offenders (This Week)</Text>
+      <View style={styles.card}>
+          <View style={styles.offenderRow}>
+              <Text style={styles.rank}>#1</Text>
+              <View style={{flex: 1, marginLeft: 12}}>
+                  <Text style={styles.offenderName}>SteelWorks Pvt Ltd</Text>
+                  <Text style={styles.offenderZone}>Industrial Area A</Text>
+              </View>
+              <Text style={styles.violationCount}>12 Violations</Text>
+          </View>
+           <View style={styles.divider} />
+           <View style={styles.offenderRow}>
+              <Text style={styles.rank}>#2</Text>
+              <View style={{flex: 1, marginLeft: 12}}>
+                  <Text style={styles.offenderName}>Global Chem</Text>
+                  <Text style={styles.offenderZone}>Zone B</Text>
+              </View>
+              <Text style={styles.violationCount}>8 Violations</Text>
+          </View>
+      </View>
+
+       {/* Hotspot Map Overlay */}
+       <Text style={styles.sectionTitle}>Hotspot Map Overlay</Text>
+       <View style={styles.mapPlaceholder}>
+           <MapView
+                style={styles.mapImage}
+                initialRegion={{
+                    latitude: 28.6139,
+                    longitude: 77.2090,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                }}
+           >
+               {/* Hotspot Polygon */}
+               <Polygon
+                coordinates={[
+                    { latitude: 28.6139, longitude: 77.2090 },
+                    { latitude: 28.6239, longitude: 77.2190 },
+                    { latitude: 28.6339, longitude: 77.2090 },
+                    { latitude: 28.6239, longitude: 77.1990 },
+                ]}
+                fillColor="rgba(239, 68, 68, 0.4)"
+                strokeColor="rgba(239, 68, 68, 0.8)"
+                strokeWidth={2}
+               />
+               
+               {/* Markers */}
+               <Marker coordinate={{ latitude: 28.6239, longitude: 77.2090 }} title="Industry Fault">
+                   <View style={[styles.mapMarker, { backgroundColor: '#EF4444' }]}>
+                       <Text style={{fontSize: 12}}>🏭</Text>
+                   </View>
+               </Marker>
+               
+                <Marker coordinate={{ latitude: 28.6189, longitude: 77.2150 }} title="Farm Fire">
+                   <View style={[styles.mapMarker, { backgroundColor: '#F59E0B' }]}>
+                       <Text style={{fontSize: 12}}>🔥</Text>
+                   </View>
+               </Marker>
+
+                <Marker coordinate={{ latitude: 28.6100, longitude: 77.2000 }} title="Traffic Jam">
+                   <View style={[styles.mapMarker, { backgroundColor: '#EF4444' }]}>
+                       <Text style={{fontSize: 12}}>🚗</Text>
+                   </View>
+               </Marker>
+           </MapView>
+       </View>
+
+    </View>
+  );
+
+  const renderIndustryDashboard = () => (
+      <View>
+          {/* Real-Time Emissions Gauge */}
+          <Text style={styles.sectionTitle}>Real-Time Emissions</Text>
+          <View style={styles.card}>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+                  <View style={{alignItems: 'center'}}>
+                      <Text style={styles.gaugeValue}>38</Text>
+                      <Text style={styles.gaugeLabel}>Your SO2 (PPM)</Text>
+                  </View>
+                  <View style={{width: 1, height: 40, backgroundColor: '#E5E7EB'}} />
+                  <View style={{alignItems: 'center'}}>
+                      <Text style={[styles.gaugeValue, { color: '#6B7280'}]}>40</Text>
+                      <Text style={styles.gaugeLabel}>Govt Limit</Text>
+                  </View>
+              </View>
+              
+               {/* Visual Bar */}
+               <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarFill, { width: '95%', backgroundColor: '#F59E0B' }]} />
+              </View>
+              <Text style={{fontSize: 10, color: '#F59E0B', marginTop: 4, textAlign: 'right'}}>Nearing Limit</Text>
+
+              {/* AI Warning */}
+              <View style={[styles.aiWarningBox, { marginTop: 16 }]}>
+                   <Ionicons name="warning" size={16} color="#B45309" />
+                   <Text style={styles.aiWarningText}>
+                       anomaly detected: Check Sensor Calibration immediately to avoid fraud flag.
+                   </Text>
+              </View>
+          </View>
+
+          {/* Proof of Filter Upload */}
+          <Text style={styles.sectionTitle}>Proof of Filter Efficiency</Text>
+          <View style={styles.card}>
+              <Text style={styles.inputLabel}>Inlet PPM</Text>
+              <TextInput 
+                  style={styles.input} 
+                  placeholder="e.g. 500" 
+                  keyboardType="numeric"
+                  value={inletPPM}
+                  onChangeText={setInletPPM}
+              />
+
+              <Text style={styles.inputLabel}>Outlet PPM</Text>
+               <TextInput 
+                  style={styles.input} 
+                  placeholder="e.g. 25" 
+                  keyboardType="numeric"
+                  value={outletPPM}
+                  onChangeText={setOutletPPM}
+              />
+              
+              <TouchableOpacity style={styles.calculateButton} onPress={calculateEfficiency}>
+                  <Text style={styles.calculateButtonText}>Calculate & Submit Proof</Text>
+              </TouchableOpacity>
+            
+             {efficiency !== null && (
+                  <View style={[styles.efficiencyResult, { backgroundColor: efficiency >= 90 ? '#ECFDF5' : '#FEF2F2' }]}>
+                      <Text style={[styles.efficiencyText, { color: efficiency >= 90 ? '#059669' : '#EF4444' }]}>
+                          Efficiency Score: {efficiency.toFixed(1)}% - {efficiency >= 90 ? 'PASS' : 'FAIL'}
+                      </Text>
+                  </View>
+             )}
+          </View>
+          
+          {/* Audit Request Button */}
+           <TouchableOpacity style={styles.reinspectButton} onPress={() => Alert.alert("Request Sent", "A government auditor has been notified.")}>
+                <Ionicons name="shield-checkmark" size={20} color="white" style={{ marginRight: 8 }} />
+                <Text style={styles.reinspectButtonText}>Request Re-Inspection</Text>
+           </TouchableOpacity>
+
+
+          {/* Factory Location Overlay */}
+          <Text style={styles.sectionTitle}>Factory Safety Zone</Text>
+          <View style={styles.mapPlaceholder}>
+                <MapView
+                    style={styles.mapImage}
+                    initialRegion={{
+                        latitude: 28.55,
+                        longitude: 77.27,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                    }}
+                >
+                    <Marker coordinate={{ latitude: 28.55, longitude: 77.27 }} title="My Factory">
+                         <View style={[styles.mapMarker, { backgroundColor: '#10B981' }]}>
+                            <Text style={{fontSize: 12}}>🏭</Text>
+                        </View>
+                    </Marker>
+                     <Circle 
+                        center={{ latitude: 28.55, longitude: 77.27 }}
+                        radius={300}
+                        fillColor="rgba(16, 185, 129, 0.2)"
+                        strokeColor="rgba(16, 185, 129, 0.6)"
+                     />
+                </MapView>
+          </View>
+
+      </View>
+  );
+
+  const renderCitizenDashboard = () => (
+    <View>
         {/* Main AQI Card */}
         <LinearGradient
           colors={['#FF9900', '#FF5500']}
@@ -238,7 +439,48 @@ export default function DashboardScreen() {
             <Text style={styles.actionDesc}>Recommended for Sector 4 due to peak NOx.</Text>
           </View>
         </View>
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar style="dark" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Image 
+            source={require('../../assets/logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain"
+          />
+          <View style={styles.headerTitles}>
+            <Text style={styles.appName}>{greeting}, {userName.split(' ')[0]}</Text>
+            <View style={styles.locationContainer}>
+              {loadingLocation ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <>
+                  <Text style={styles.locationText} numberOfLines={1}>
+                    {locationName}
+                  </Text>
+                  <Ionicons name="chevron-down" size={10} color="#374151" />
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.notificationButton}>
+          <Ionicons name="notifications" size={24} color="#1F2937" />
+          <View style={styles.notificationBadge} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {userRole === 'Government' ? renderGovernmentDashboard() : 
+         userRole === 'Industry' ? renderIndustryDashboard() :
+         renderCitizenDashboard()}
       </ScrollView>
 
 
@@ -519,5 +761,135 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 18,
   },
-
+  
+  // Government Dashboard Styles
+  feedCard: {
+      backgroundColor: '#FEF2F2',
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 24,
+      borderLeftWidth: 4,
+      borderLeftColor: '#EF4444',
+  },
+  feedItem: {},
+  alertTag: {
+      color: '#EF4444',
+      fontWeight: 'bold',
+      fontSize: 12,
+      marginRight: 8,
+  },
+  feedLocation: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#1F2937',
+  },
+  feedDetails: {
+      fontSize: 12,
+      color: '#4B5563',
+      marginBottom: 12,
+  },
+  dispatchButton: {
+      backgroundColor: '#EF4444',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      alignSelf: 'flex-start',
+  },
+  dispatchButtonText: {
+      color: 'white',
+      fontSize: 12,
+      fontWeight: 'bold',
+  },
+  card: { // Generic card style if not exists
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  ticketItem: {
+      marginBottom: 12,
+  },
+  ticketHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+  },
+  ticketTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#1F2937',
+  },
+  statusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 12,
+  },
+  statusText: {
+      fontSize: 10,
+      fontWeight: 'bold',
+  },
+  ticketTime: {
+      fontSize: 12,
+      color: '#9CA3AF',
+  },
+  divider: {
+      height: 1,
+      backgroundColor: '#F3F4F6',
+      marginVertical: 12,
+  },
+  offenderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+  },
+  rank: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#6B7280',
+      width: 24,
+  },
+  offenderName: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#1F2937',
+  },
+  offenderZone: {
+      fontSize: 12,
+      color: '#6B7280',
+  },
+  violationCount: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#EF4444',
+  },
+  mapPlaceholder: {
+      height: 200,
+      borderRadius: 16,
+      overflow: 'hidden',
+      marginBottom: 32,
+      backgroundColor: '#E5E7EB',
+      position: 'relative',
+  },
+  mapImage: {
+      width: '100%',
+      height: '100%',
+  },
+  mapOverlay: {
+      ...StyleSheet.absoluteFillObject,
+  },
+  mapMarker: {
+      position: 'absolute',
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: 'white',
+  },
 });
