@@ -30,17 +30,31 @@ const UserSchema = new mongoose.Schema({
     age: { type: Number },
     city: { type: String },
     pincode: { type: String },
+    companyName: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 
 const User = mongoose.model('User', UserSchema);
-// ...
+
+// Audit Schema
+const AuditSchema = new mongoose.Schema({
+    title: String,
+    target: String, // Company Name
+    date: { type: Date, default: Date.now },
+    officer: String,
+    reason: String,
+    status: { type: String, enum: ['Compliant', 'Non-Compliant', 'Resolved', 'Pending', 'Re-Audit Requested', 'Completed'], default: 'Pending' },
+    details: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Audit = mongoose.model('Audit', AuditSchema);
 
 // Register
 app.post('/signup', async (req, res) => {
     try {
         console.log('Signup Request Body:', req.body);
-        const { name, email, password, role, age, city, pincode } = req.body;
+        const { name, email, password, role, age, city, pincode, companyName } = req.body;
 
         // Check if user exists
         let user = await User.findOne({ email });
@@ -60,7 +74,8 @@ app.post('/signup', async (req, res) => {
             role,
             age,
             city,
-            pincode
+            pincode,
+            companyName
         });
 
         await user.save();
@@ -70,10 +85,9 @@ app.post('/signup', async (req, res) => {
 
         res.status(201).json({
             token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role, age: user.age, city: user.city, pincode: user.pincode }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, age: user.age, city: user.city, pincode: user.pincode, companyName: user.companyName }
         });
     } catch (error) {
-        // ... (catch block)
         console.error('Signup Error:', error);
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern).join(', ');
@@ -105,7 +119,7 @@ app.post('/login', async (req, res) => {
 
         res.json({
             token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, companyName: user.companyName }
         });
     } catch (error) {
         console.error(error);
@@ -124,6 +138,46 @@ app.get('/me', async (req, res) => {
         res.json(user);
     } catch (error) {
         res.status(401).json({ message: 'Token is not valid' });
+    }
+});
+
+// Create Audit Request (Re-Inspection)
+app.post('/audit/request', async (req, res) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) return res.status(401).json({ message: 'No token' });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+
+        if (user.role !== 'Industry') return res.status(403).json({ message: 'Only Industry can request re-audit' });
+
+        const newAudit = new Audit({
+            title: 'Re-Inspection Request',
+            target: user.companyName || user.name,
+            officer: 'Pending Assignment',
+            reason: 'Self-reported correction of violation',
+            status: 'Re-Audit Requested',
+            details: req.body.details || 'Industry claims to have fixed the emission issues.'
+        });
+
+        await newAudit.save();
+        res.json(newAudit);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get All Audits (For Government)
+app.get('/audits', async (req, res) => {
+    try {
+        // In a real app, verify token and check if role is Government
+        const audits = await Audit.find().sort({ date: -1 });
+        res.json(audits);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

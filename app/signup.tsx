@@ -28,25 +28,25 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [loading, setLoading] = useState(false);
-
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [pledgeAccepted, setPledgeAccepted] = useState(false);
-
+  
   const handleSignup = async () => {
     if (!pledgeAccepted) {
         Alert.alert('Pledge Required', 'Please accept the Responsible Use Pledge to continue.');
         return;
     }
-    if (!name || !email || !password || !age) {
+    if (!name || !email || !password || !age || (role === 'Industry' && !companyName)) {
         Alert.alert('Error', 'Please fill in all fields.');
         return;
     }
 
     setLoading(true);
     try {
-        const data = await api.signup(name, email, password, role, age, city, pincode);
+        const data = await api.signup(name, email, password, role, age, city, pincode, companyName);
         if (data.token) {
             await setToken(data.token);
             // Navigate to the tabs dashboard
@@ -142,6 +142,23 @@ export default function SignupScreen() {
 
         {/* Top Form Fields */}
         <View style={styles.formGroup}>
+          
+          {role === 'Industry' && (
+              <View>
+                <Text style={styles.label}>Company Name <Text style={{color: '#EF4444'}}>*</Text></Text>
+                <TextInput 
+                  placeholder="e.g. Acme Industries Ltd." 
+                  style={styles.input} 
+                  placeholderTextColor="#9CA3AF"
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                />
+                <Text style={{fontSize: 10, color: '#6B7280', marginTop: 4}}>
+                    This name cannot be changed later.
+                </Text>
+              </View>
+          )}
+          
           <View>
             <Text style={styles.label}>Full Name</Text>
             <TextInput 

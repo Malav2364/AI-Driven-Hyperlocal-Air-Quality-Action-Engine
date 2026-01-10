@@ -51,13 +51,49 @@ export const api = {
         return res.json();
     },
 
-    signup: async (name: string, email: string, password: string, role: string, age: string, city: string, pincode: string) => {
-        const res = await fetch(`${BASE_URL}/signup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, role, age, city, pincode }),
-        });
-        return res.json();
+    signup: async (name: string, email: string, password: string, role: string, age: string, city: string, pincode: string, companyName: string) => {
+        try {
+            const response = await fetch(`${BASE_URL}/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, role, age, city, pincode, companyName }),
+            });
+            return await response.json();
+        } catch (error) {
+            return { error: true, message: 'Network error', details: error };
+        }
+    },
+
+    requestReInspection: async (details: any) => {
+        const token = await getToken();
+        try {
+            const response = await fetch(`${BASE_URL}/audit/request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ details })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error("Re-Inspection Request Error", error);
+            return null;
+        }
+    },
+
+    getAudits: async () => {
+        const token = await getToken();
+        try {
+            const response = await fetch(`${BASE_URL}/audits`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return await response.json();
+        } catch (error) {
+            console.error("Get Audits Error", error);
+            return [];
+        }
     },
 
     getMe: async () => {

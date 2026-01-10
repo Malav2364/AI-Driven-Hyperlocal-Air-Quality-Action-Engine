@@ -13,10 +13,11 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
-import MapView, { Marker, Polygon } from 'react-native-maps';
+import MapView, { Circle, Marker, Polygon } from 'react-native-maps';
 import { api } from '../services/api';
 
 const { width } = Dimensions.get('window');
@@ -108,6 +109,113 @@ export default function DashboardScreen() {
       }
     })();
   }, []);
+
+  const [acres, setAcres] = useState('');
+  const [biomass, setBiomass] = useState('');
+  const [earnings, setEarnings] = useState(15000);
+
+  const renderFarmerDashboard = () => (
+      <View>
+          {/* Fire Risk Advisory */}
+          <Text style={styles.sectionTitle}>Fire Risk Advisory</Text>
+          <View style={[styles.card, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5', borderWidth: 1 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Ionicons name="warning" size={24} color="#DC2626" />
+                  <Text style={[styles.actionTitle, { marginLeft: 10, color: '#DC2626' }]}>High Risk Alert</Text>
+              </View>
+              <Text style={styles.actionDesc}>
+                  Wind Speed is LOW (Bowl Effect). Do NOT burn stubble today. 
+                  <Text style={{fontWeight: 'bold', color: '#DC2626'}}> Fine Risk: HIGH.</Text>
+              </Text>
+          </View>
+
+          {/* Sell Stubble */}
+          <Text style={styles.sectionTitle}>Sell Stubble (Biomass)</Text>
+          <View style={styles.card}>
+              <View style={{flexDirection: 'row', gap: 16}}>
+                  <View style={{flex: 1}}>
+                      <Text style={styles.inputLabel}>Acres of Land</Text>
+                      <TextInput 
+                          style={styles.input} 
+                          placeholder="e.g. 5" 
+                          keyboardType="numeric"
+                          value={acres}
+                          onChangeText={setAcres}
+                      />
+                  </View>
+                  <View style={{flex: 1}}>
+                       <Text style={styles.inputLabel}>Est. Biomass (kg)</Text>
+                      <TextInput 
+                          style={styles.input} 
+                          placeholder="e.g. 2000" 
+                          keyboardType="numeric"
+                          value={biomass}
+                          onChangeText={setBiomass}
+                      />
+                  </View>
+              </View>
+              
+              <TouchableOpacity style={styles.uploadButton}>
+                  <Ionicons name="camera" size={20} color="#4B5563" />
+                  <Text style={styles.uploadButtonText}>Upload Site Photo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.calculateButton, { backgroundColor: '#15803D' }]} onPress={() => Alert.alert("Success", "Listing created! Power plants will bid shortly.")}>
+                  <Text style={styles.calculateButtonText}>Submit for Bid</Text>
+              </TouchableOpacity>
+          </View>
+
+           {/* Earnings Wallet */}
+           <Text style={styles.sectionTitle}>Earnings Wallet</Text>
+           <View style={[styles.card, { backgroundColor: '#F0FDF4' }]}>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                   <View>
+                       <Text style={{ fontSize: 14, color: '#166534', fontWeight: '500' }}>Pending Payment</Text>
+                       <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#15803D' }}>₹ {earnings.toLocaleString()}</Text>
+                   </View>
+                   <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center' }}>
+                       <Ionicons name="wallet" size={24} color="#15803D" />
+                   </View>
+               </View>
+               <TouchableOpacity style={{ marginTop: 16 }}>
+                   <Text style={{ color: '#15803D', fontWeight: 'bold', fontSize: 14 }}>View Transaction History &rarr;</Text>
+               </TouchableOpacity>
+           </View>
+
+           {/* Map Overlay */}
+           <Text style={styles.sectionTitle}>Local Map</Text>
+            <View style={styles.mapPlaceholder}>
+                <MapView
+                    style={styles.mapImage}
+                    initialRegion={{
+                        latitude: 28.7041,
+                        longitude: 77.1025,
+                        latitudeDelta: 0.05,
+                        longitudeDelta: 0.05,
+                    }}
+                >
+                    {/* Collection Centers */}
+                    <Marker coordinate={{ latitude: 28.7041, longitude: 77.1025 }} title="Collection Center 1">
+                         <View style={[styles.mapMarker, { backgroundColor: '#15803D' }]}>
+                            <Text style={{fontSize: 12}}>♻️</Text>
+                        </View>
+                    </Marker>
+                    <Marker coordinate={{ latitude: 28.7241, longitude: 77.0825 }} title="Collection Center 2">
+                         <View style={[styles.mapMarker, { backgroundColor: '#15803D' }]}>
+                            <Text style={{fontSize: 12}}>♻️</Text>
+                        </View>
+                    </Marker>
+
+                    {/* Fire Incidents */}
+                     <Marker coordinate={{ latitude: 28.6941, longitude: 77.1125 }} title="Fire Incident">
+                         <View style={[styles.mapMarker, { backgroundColor: '#EF4444' }]}>
+                            <Text style={{fontSize: 12}}>🔥</Text>
+                        </View>
+                    </Marker>
+                </MapView>
+            </View>
+      </View>
+  );
 
   const renderGovernmentDashboard = () => (
     <View>
@@ -289,7 +397,14 @@ export default function DashboardScreen() {
           </View>
           
           {/* Audit Request Button */}
-           <TouchableOpacity style={styles.reinspectButton} onPress={() => Alert.alert("Request Sent", "A government auditor has been notified.")}>
+           <TouchableOpacity style={styles.reinspectButton} onPress={async () => {
+                const res = await api.requestReInspection("Industry initiated re-inspection request via Dashboard.");
+                if (res) {
+                    Alert.alert("Request Sent", "A government auditor has been notified and your status is now 'Re-Audit Requested'.");
+                } else {
+                    Alert.alert("Error", "Could not send request. Please try again.");
+                }
+           }}>
                 <Ionicons name="shield-checkmark" size={20} color="white" style={{ marginRight: 8 }} />
                 <Text style={styles.reinspectButtonText}>Request Re-Inspection</Text>
            </TouchableOpacity>
@@ -480,6 +595,7 @@ export default function DashboardScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {userRole === 'Government' ? renderGovernmentDashboard() : 
          userRole === 'Industry' ? renderIndustryDashboard() :
+         userRole === 'Farmer' ? renderFarmerDashboard() :
          renderCitizenDashboard()}
       </ScrollView>
 
@@ -891,5 +1007,103 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       borderWidth: 2,
       borderColor: 'white',
+  },
+  gaugeValue: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#1F2937',
+  },
+  gaugeLabel: {
+      fontSize: 12,
+      color: '#6B7280',
+  },
+  aiWarningBox: {
+      flexDirection: 'row',
+      backgroundColor: '#FEF3C7',
+      padding: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+  },
+  aiWarningText: {
+      fontSize: 12,
+      color: '#B45309',
+      marginLeft: 8,
+      flex: 1,
+  },
+  inputLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: '#374151',
+      marginBottom: 6,
+      marginTop: 12,
+  },
+  input: {
+      backgroundColor: '#F9FAFB',
+      borderWidth: 1,
+      borderColor: '#D1D5DB',
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 14,
+  },
+  calculateButton: {
+      backgroundColor: '#2B5F6C',
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 16,
+  },
+  calculateButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 14,
+  },
+  efficiencyResult: {
+      marginTop: 16,
+      padding: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+  },
+  efficiencyText: {
+      fontWeight: 'bold',
+      fontSize: 14,
+  },
+  reinspectButton: {
+      backgroundColor: '#059669',
+      paddingVertical: 16,
+      borderRadius: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 24,
+      marginTop: 8,
+      shadowColor: '#059669',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+  },
+  reinspectButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    marginBottom: 16,
+    marginTop: 16,
+  },
+  uploadButtonText: {
+    color: '#4B5563',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 8,
   },
 });
