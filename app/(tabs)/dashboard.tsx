@@ -182,6 +182,48 @@ export default function DashboardScreen() {
                </TouchableOpacity>
            </View>
 
+            {/* Biogas Buyers */}
+            <Text style={styles.sectionTitle}>Verified Biogas Buyers</Text>
+            <View style={styles.card}>
+                <View style={styles.buyerRow}>
+                    <View>
+                        <Text style={styles.buyerName}>BioEnergy Solutions</Text>
+                        <Text style={styles.buyerPrice}>Buying at <Text style={{fontWeight: 'bold', color: '#15803D'}}>₹ 2.50/kg</Text></Text>
+                    </View>
+                    <TouchableOpacity style={styles.sellButtonSmall} onPress={() => Alert.alert("Contacting", "Connecting you to BioEnergy Solutions...")}>
+                         <Text style={styles.sellButtonSmallText}>Sell</Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.buyerRow}>
+                    <View>
+                        <Text style={styles.buyerName}>GreenFuel Hub</Text>
+                        <Text style={styles.buyerPrice}>Buying at <Text style={{fontWeight: 'bold', color: '#15803D'}}>₹ 2.30/kg</Text></Text>
+                    </View>
+                    <TouchableOpacity style={styles.sellButtonSmall} onPress={() => Alert.alert("Contacting", "Connecting you to GreenFuel Hub...")}>
+                         <Text style={styles.sellButtonSmallText}>Sell</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* Stubble Management Tools */}
+             <Text style={styles.sectionTitle}>Stubble Management</Text>
+             <View style={styles.card}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={styles.toolIconBox}>
+                        <Ionicons name="construct" size={24} color="#B45309" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.toolName}>Rent Stubble Baler</Text>
+                        <Text style={styles.toolDesc}>Compress stubble for easy transport.</Text>
+                        <Text style={styles.toolPrice}>₹ 500 / hour</Text>
+                    </View>
+                </View>
+                <TouchableOpacity style={styles.rentButton} onPress={() => Alert.alert("Rent Request", "Stubble Baler requested for your location.")}>
+                    <Text style={styles.rentButtonText}>Rent Now</Text>
+                </TouchableOpacity>
+             </View>
+
            {/* Map Overlay */}
            <Text style={styles.sectionTitle}>Local Map</Text>
             <View style={styles.mapPlaceholder}>
@@ -216,6 +258,37 @@ export default function DashboardScreen() {
             </View>
       </View>
   );
+  const [credits, setCredits] = useState(450);
+
+  const handlePlantTree = () => {
+    Alert.alert(
+        "Planting Protocol Initiated",
+        "Step 1: Analyzing GPS Location for viability...",
+        [
+            { text: "Cancel", style: "cancel" },
+            { text: "Proceed", onPress: () => {
+                setTimeout(() => {
+                     Alert.alert("Success", "Photo Verified! Local sapling identified. +100 Green Credits added to your wallet.", [
+                         { text: "Awesome!", onPress: () => setCredits(c => c + 100) }
+                     ]);
+                }, 1000);
+            }}
+        ]
+    );
+  };
+
+  const handleScan = () => {
+      Alert.alert(
+          "Green Scanner",
+          "Choose a mode to earn credits:",
+          [
+              { text: "Bus QR", onPress: () => Alert.alert("Scanned", "Bus Ride Verified. +10 Credits") },
+              { text: "Metro QR", onPress: () => Alert.alert("Scanned", "Metro Ride Verified. +20 Credits") },
+              { text: "Carpool", onPress: () => Alert.alert("Scanned", "Carpool Partner Verified. +15 Credits") },
+              { text: "Cancel", style: "cancel" }
+          ]
+      );
+  };
 
   const renderGovernmentDashboard = () => (
     <View>
@@ -439,6 +512,7 @@ export default function DashboardScreen() {
       </View>
   );
 
+  // Citizen Dashboard - Monitoring View
   const renderCitizenDashboard = () => (
     <View>
         {/* Main AQI Card */}
@@ -1087,6 +1161,68 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: 'bold',
   },
+  buyerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+  },
+  buyerName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#1F2937',
+  },
+  buyerPrice: {
+      fontSize: 12,
+      color: '#6B7280',
+      marginTop: 2,
+  },
+  sellButtonSmall: {
+      backgroundColor: '#15803D',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+  },
+  sellButtonSmallText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 12,
+  },
+  toolIconBox: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      backgroundColor: '#FEF3C7',
+      alignItems: 'center',
+      justifyContent: 'center',
+  },
+  toolName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#1F2937',
+  },
+  toolDesc: {
+      fontSize: 12,
+      color: '#6B7280',
+      marginBottom: 4,
+  },
+  toolPrice: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#B45309',
+  },
+  rentButton: {
+      backgroundColor: '#B45309',
+      paddingVertical: 12,
+      borderRadius: 12,
+      alignItems: 'center',
+      marginTop: 16,
+  },
+  rentButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 14,
+  },
   uploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1105,5 +1241,121 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
     marginLeft: 8,
+  },
+  
+  // Citizen Dashboard Styles
+  walletCard: {
+      backgroundColor: 'white',
+      borderRadius: 20,
+      padding: 20,
+      marginBottom: 24,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 3,
+  },
+  walletLabel: {
+      fontSize: 14,
+      color: '#6B7280',
+      fontWeight: '500',
+      marginBottom: 4,
+  },
+  walletBalance: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: '#166534',
+      marginBottom: 8,
+  },
+  redeemText: {
+      color: '#16A34A',
+      fontWeight: 'bold',
+      fontSize: 12,
+  },
+  rankBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FEF3C7',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      marginBottom: 4,
+  },
+  rankText: {
+      color: '#B45309',
+      fontSize: 12,
+      fontWeight: 'bold',
+      marginLeft: 4,
+  },
+  leaderboardText: {
+      fontSize: 12,
+      color: '#6B7280',
+  },
+  fabButton: {
+      marginBottom: 24,
+      shadowColor: '#16A34A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+  },
+  fabGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 16,
+      borderRadius: 16,
+  },
+  fabText: {
+      color: 'white',
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginLeft: 12,
+  },
+  plantCard: {
+      backgroundColor: 'white',
+      borderRadius: 16,
+      overflow: 'hidden',
+      marginBottom: 24,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 3,
+  },
+  plantImage: {
+      width: '100%',
+      height: 140,
+  },
+  plantContent: {
+      padding: 16,
+  },
+  plantTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#1F2937',
+      marginBottom: 4,
+  },
+  plantDesc: {
+      fontSize: 12,
+      color: '#6B7280',
+      marginBottom: 16,
+      lineHeight: 18,
+  },
+  plantButton: {
+      backgroundColor: '#15803D',
+      paddingVertical: 10,
+      borderRadius: 8,
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      paddingHorizontal: 20,
+  },
+  plantButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 12,
   },
 });

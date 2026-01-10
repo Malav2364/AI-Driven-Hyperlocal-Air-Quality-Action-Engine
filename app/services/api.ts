@@ -8,11 +8,13 @@ const API_URL = 'http://localhost:5000'; // For iOS simulator
 // Helper to determine fetch URL based on platform if needed, 
 // using localhost for now as default for web/ios
 const getBaseUrl = () => {
-    // Attempting to use the machine's LAN IP which works for Emulators and Physical Devices on the same network
-    if (Platform.OS === 'android' || Platform.OS === 'ios') {
+    // For Android Emulator, use 10.0.2.2
+    if (Platform.OS === 'android') {
         return 'http://172.20.10.4:5000';
     }
+    // For iOS Simulator or Web
     return 'http://localhost:5000';
+    // If using physical device, replace with your PC's LAN IP, e.g., 'http://192.168.1.5:5000'
 };
 
 const BASE_URL = getBaseUrl();
@@ -115,7 +117,50 @@ export const api = {
             body: JSON.stringify(data)
         });
         return res.json();
-    }
+    },
+
+    reportPollution: async (formData: FormData) => {
+        const token = await getToken();
+        const res = await fetch(`${BASE_URL}/complaints`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                // 'Content-Type': 'multipart/form-data' // Fetch handles boundary automatically for FormData
+            },
+            body: formData
+        });
+        return res.json();
+    },
+
+    getComplaints: async () => {
+        const token = await getToken();
+        const res = await fetch(`${BASE_URL}/complaints`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    },
+
+    resolveComplaint: async (id: string) => {
+        const token = await getToken();
+        const res = await fetch(`${BASE_URL}/complaints/${id}/resolve`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.json();
+    },
+
+    requestComplaintReAudit: async (id: string, reason: string) => {
+        const token = await getToken();
+        const res = await fetch(`${BASE_URL}/complaints/${id}/reaudit`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason })
+        });
+        return res.json();
+    },
 };
 
 export default api;

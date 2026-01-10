@@ -3,16 +3,16 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { api, removeToken } from '../services/api';
 
@@ -100,7 +100,7 @@ export default function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <View style={styles.avatarBorder}>
                 <Image 
-                source={{ uri: 'https://i.pravatar.cc/150?img=11' }} 
+                source={require('../../assets/pixar.png')} 
                 style={styles.avatar} 
                 />
             </View>

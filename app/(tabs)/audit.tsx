@@ -4,13 +4,15 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
+    Image,
     LayoutAnimation,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import { api } from '../services/api';
 
@@ -63,48 +65,46 @@ const AuditScreen = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [activeTab, setActiveTab] = useState('Pending'); // Pending, Completed, Re-Audit
-    const [auditReports, setAuditReports] = useState<any[]>([]);
+    const [reports, setReports] = useState<any[]>([]);
     const router = useRouter();
 
-    useEffect(() => {
-        const checkAccessAndFetch = async () => {
-            try {
-                const user = await api.getMe();
-                if (user && user.role === 'Government') {
-                    setIsAuthorized(true);
-                    // Fetch Audits
-                    const audits = await api.getAudits();
-                    // Merge with mock data if needed for demo, or just use real
-                    // For now, let's just use what we get back + mock if empty? 
-                    // To show functionality, let's prepend real audits to Mock Data to ensure list isn't empty if DB is empty
-                    // But duplicates might be an issue. Let's just use array spread.
-                    const realAudits = Array.isArray(audits) ? audits : [];
-                    
-                    // Transform MongoDB _id to id and ensure date is proper
-                    const formattedAudits = realAudits.map((a: any) => ({
-                        ...a,
-                        id: a._id,
-                        date: new Date(a.date).toISOString().split('T')[0],
-                        status: a.status 
-                    }));
-
-                    setAuditReports([...formattedAudits, ...AUDIT_REPORTS]);
-                } else {
-                    setIsAuthorized(false);
-                }
-            } catch (error) {
-                console.log('Error checking access:', error);
+    const fetchReports = async () => {
+        setIsLoading(true);
+        try {
+            const user = await api.getMe();
+            if (user && user.role === 'Government') {
+                setIsAuthorized(true);
+                const data = await api.getComplaints();
+                // Map to UI friendly format if needed, but schema is fine.
+                // Schema: { _id, description, location, imageUrl, status, userName, createdAt }
+                setReports(data || []);
+            } else {
                 setIsAuthorized(false);
-            } finally {
-                setIsLoading(false);
             }
-        };
-        checkAccessAndFetch();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReports();
     }, []);
 
     const toggleExpand = (id: string) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedId(expandedId === id ? null : id);
+    };
+    
+    const handleResolve = async (id: string) => {
+        try {
+            await api.resolveComplaint(id);
+            Alert.alert("Success", "Complaint marked as resolved. Credits awarded.");
+            fetchReports(); // Refresh
+        } catch (e) {
+            Alert.alert("Error", "Failed to resolve.");
+        }
     };
 
     if (isLoading) {
@@ -121,7 +121,7 @@ const AuditScreen = () => {
                 <Ionicons name="lock-closed" size={48} color="#EF4444" />
                 <Text style={{ fontSize: 18, fontWeight: 'bold', marginTop: 16, color: '#1F2937' }}>Access Denied</Text>
                 <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', marginTop: 8 }}>
-                    You do not have permission to view audit reports.
+                    You do not have permission to view pollution complaints.
                 </Text>
                 <TouchableOpacity 
                     style={{ marginTop: 24, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: '#2B5F6C', borderRadius: 8 }}
@@ -135,11 +135,9 @@ const AuditScreen = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'Compliant':
             case 'Resolved':
-            case 'Completed':
                 return { bg: '#ECFDF5', text: '#059669' }; // Green
-            case 'Non-Compliant':
+            case 'Rejected':
                 return { bg: '#FEF2F2', text: '#EF4444' }; // Red
             case 'Pending':
                  return { bg: '#FEF3C7', text: '#D97706' }; // Yellow
@@ -151,10 +149,10 @@ const AuditScreen = () => {
     };
 
     const getFilteredReports = () => {
-        return auditReports.filter(report => {
+        return reports.filter(report => {
             if (activeTab === 'Pending') return report.status === 'Pending';
-            if (activeTab === 'Re-Audit') return report.status === 'Re-Audit Requested';
-            if (activeTab === 'Completed') return ['Compliant', 'Non-Compliant', 'Resolved', 'Completed'].includes(report.status);
+            if (activeTab === 'Re-Audit Requests') return report.status === 'Re-Audit Requested';
+            if (activeTab === 'Completed') return report.status === 'Resolved' || report.status === 'Rejected';
             return true;
         });
     };
@@ -165,7 +163,7 @@ const AuditScreen = () => {
         <View style={styles.container}>
             <Stack.Screen options={{ 
                 headerShown: true, 
-                title: 'Audit Reports', 
+                title: 'Pollution Complaints', 
                 headerTitleStyle: { color: '#111827', fontWeight: 'bold' },
                 headerStyle: { backgroundColor: 'white' },
                 headerShadowVisible: false,
@@ -174,7 +172,7 @@ const AuditScreen = () => {
             
             {/* Tabs */}
             <View style={styles.tabContainer}>
-                {['Pending', 'Re-Audit', 'Completed'].map((tab) => (
+                {['Pending', 'Re-Audit Requests', 'Completed'].map((tab) => (
                     <TouchableOpacity 
                         key={tab} 
                         style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
@@ -191,26 +189,28 @@ const AuditScreen = () => {
                 {filteredReports.length === 0 ? (
                      <View style={{ alignItems: 'center', marginTop: 40, opacity: 0.6 }}>
                         <Ionicons name="clipboard-outline" size={48} color="#9CA3AF" />
-                        <Text style={{ marginTop: 12, color: '#6B7280' }}>No reports found.</Text>
+                        <Text style={{ marginTop: 12, color: '#6B7280' }}>No complaints found.</Text>
                     </View>
                 ) : (
                     filteredReports.map((report) => (
-                        <View key={report.id} style={styles.card}>
+                        <View key={report._id} style={styles.card}>
                             <TouchableOpacity 
                                 style={styles.cardHeader} 
-                                onPress={() => toggleExpand(report.id)}
+                                onPress={() => toggleExpand(report._id)}
                                 activeOpacity={0.7}
                             >
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.reportTitle}>{report.title}</Text>
+                                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                         <Text style={styles.reportTitle}>{report.location || 'Unknown Location'}</Text>
+                                    </View>
                                     <View style={styles.metaRow}>
                                         <View style={styles.metaItem}>
-                                            <Ionicons name="business" size={14} color="#6B7280" />
-                                            <Text style={styles.metaText}>{report.target}</Text>
+                                            <Ionicons name="person" size={12} color="#6B7280" />
+                                            <Text style={styles.metaText}>{report.userName || 'Anonymous'}</Text>
                                         </View>
                                         <View style={styles.metaItem}>
-                                            <Ionicons name="calendar" size={14} color="#6B7280" />
-                                            <Text style={styles.metaText}>{report.date}</Text>
+                                            <Ionicons name="calendar" size={12} color="#6B7280" />
+                                            <Text style={styles.metaText}>{new Date(report.createdAt).toLocaleDateString()}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -221,7 +221,7 @@ const AuditScreen = () => {
                                         </Text>
                                     </View>
                                     <Ionicons 
-                                        name={expandedId === report.id ? "chevron-up" : "chevron-down"} 
+                                        name={expandedId === report._id ? "chevron-up" : "chevron-down"} 
                                         size={20} 
                                         color="#9CA3AF" 
                                         style={{ marginTop: 8 }}
@@ -229,21 +229,36 @@ const AuditScreen = () => {
                                 </View>
                             </TouchableOpacity>
 
-                            {expandedId === report.id && (
+                            {expandedId === report._id && (
                                 <View style={styles.cardContent}>
                                     <View style={styles.divider} />
-                                    <Text style={styles.label}>Inspecting Officer</Text>
-                                    <Text style={styles.value}>{report.officer}</Text>
                                     
-                                    <Text style={styles.label}>Reason for Audit</Text>
-                                    <Text style={styles.value}>{report.reason}</Text>
+                                    {report.imageUrl && (
+                                        <Image 
+                                            source={{ uri: report.imageUrl }} 
+                                            style={{ width: '100%', height: 200, borderRadius: 8, marginBottom: 16 }} 
+                                            resizeMode="cover"
+                                        />
+                                    )}
 
-                                    <Text style={styles.label}>Details / Findings</Text>
-                                    <Text style={styles.value}>{report.details}</Text>
+                                    <Text style={styles.label}>Description</Text>
+                                    <Text style={styles.value}>{report.description}</Text>
+                                    
+                                    {report.status === 'Re-Audit Requested' && (
+                                        <>
+                                            <Text style={styles.label}>Re-Audit Reason</Text>
+                                            <Text style={styles.value}>{report.reAuditReason}</Text>
+                                        </>
+                                    )}
 
-                                    <TouchableOpacity style={styles.actionButton}>
-                                        <Text style={styles.actionButtonText}>View Full Report</Text>
-                                    </TouchableOpacity>
+                                    {report.status === 'Pending' && (
+                                        <TouchableOpacity 
+                                            style={[styles.actionButton, { borderBottomColor: '#059669' }]}
+                                            onPress={() => handleResolve(report._id)}
+                                        >
+                                            <Text style={[styles.actionButtonText, { color: '#059669' }]}>Verify & Mark Resolved (+Credits)</Text>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             )}
                         </View>

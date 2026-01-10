@@ -59,6 +59,25 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="green"
+        options={{
+          title: 'Rewards',
+          href: userRole === 'Government' ? null : undefined,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              backgroundColor: focused ? '#ECFDF5' : 'transparent',
+              width: 48,
+              height: 32,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Ionicons name={focused ? "gift" : "gift-outline"} size={22} color={color} />
+            </View>
+          ),
+        }}
+      />
       
       <Tabs.Screen
         name="market"
